@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "sqlServerName": {
-      "value": "kh_SQL"
+      "value": "kh-sql"
     },
     "administratorLogin": {
       "value": "admin"
