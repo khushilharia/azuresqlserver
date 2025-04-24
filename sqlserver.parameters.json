@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerName": {
+      "value": "kh_SQL"
+    },
+    "administratorLogin": {
+      "value": "admin"
+    },
+    "administratorPassword": {
+      "value": "admin@1234"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "vnetName": {
+      "value": "kh_vnet"
+    },
+    "subnetName": {
+      "value": "ple-subnet"
+    },
+    "vnetResourceGroup": {
+      "value": "khrg"
+    },
+    "sqlDatabaseName": {
+      "value": "kh_db"
+    },
+    "skuName": {
+      "value": "S0"
+    },
+    "maxSizeBytes": {
+      "value": "1073741824"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": ""
+    }
+  }
+}

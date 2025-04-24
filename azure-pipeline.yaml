@@ -1,0 +1,42 @@
+trigger: none
+  # branches:
+  #   include:
+  #     - main
+
+variables:
+  azureSubscription: 'Pay-as-you-go-sc'
+  location: 'eastus'
+  bicepFile: 'sqlserver.bicep'
+
+stages:
+  - stage: CreateAzureVNET
+    displayName: 'CreateSQLServer'
+    jobs:
+      - deployment: CreateSQLServer
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                
+                - task: PublishBuildArtifacts@1
+                  displayName: 'Publish Bicep Artifact'
+                  inputs:
+                    pathtoPublish: '$(System.DefaultWorkingDirectory)'
+                    artifactName: 'bicep'
+                    publishLocation: 'Container'
+
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: 'Bicep to Deploy SQLvServer'
+                  inputs:
+                    deploymentScope: 'Resource Group'
+                    azureResourceManagerConnection: '$(azureSubscription)'
+                    subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
+                    action: 'Create Or Update Resource Group'
+                    resourceGroupName: 'khrg'
+                    location: '$(location)'
+                    templateLocation: 'Linked artifact'
+                    csmFile: '$(bicepFile)'
+                    csmParametersFile: 'sqlserver.parameters.json'
+                    deploymentMode: 'Incremental'
