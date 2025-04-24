@@ -33,7 +33,7 @@
       "value": "1073741824"
     },
     "logAnalyticsWorkspaceId": {
-      "value": ""
+      "value": "/subscriptions/6f0f938c-0599-4b69-9b56-09468ec24549/resourcegroups/khrg/providers/microsoft.operationalinsights/workspaces/kh-log-analytics"
     }
   }
 }
