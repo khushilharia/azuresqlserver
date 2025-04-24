@@ -36,7 +36,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-04-01' existing 
 }
 
 // Create SQL Server
-resource sqlServer 'Microsoft.Sql/servers@2022-11-01' = {
+resource sqlServer 'Microsoft.Sql/servers@2024-05-01-preview' = {
   name: sqlServerName
   location: location
   properties: {
@@ -97,7 +97,7 @@ param maxSizeBytes string = '2147483648'
 param logAnalyticsWorkspaceId string
 
 // SQL Database creation
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-11-01' = {
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2024-05-01-preview' = {
   parent: sqlServer
   name: sqlDatabaseName
   location: location
