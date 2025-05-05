@@ -154,7 +154,6 @@ stages:
                   --resource-group $(resourceGroupName) \
                   --template-file $(bicepFile) \
                   --parameters @$(parametersFile) \
-                  --confirm-with-what-if
 
   - stage: Deploy
     displayName: 'Deploy Azure SQL Server'
