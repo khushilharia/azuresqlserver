@@ -1,64 +1,182 @@
+# trigger: none
+#   # branches:
+#   #   include:
+#   #     - main
+
+# variables:
+#   azureSubscription: 'Pay-as-you-go-sc'
+#   location: 'eastus'
+#   bicepFile: 'sqlserver.bicep'
+
+# stages:
+#   - stage: CreateAzureSQLServer
+#     displayName: 'CheckOut Code'
+#     jobs:
+#       - deployment: CreateSQLServer
+#         environment: 'dev'
+#         strategy:
+#           runOnce:
+#             deploy:
+#               steps:
+#                 - checkout: self
+                
+#                 - task: PublishBuildArtifacts@1
+#                   displayName: 'Publish Bicep Artifact'
+#                   inputs:
+#                     pathtoPublish: '$(System.DefaultWorkingDirectory)'
+#                     artifactName: 'bicep'
+#                     publishLocation: 'Container'
+
+#   - stage: ValidateSQLServerBicep
+#     dependsOn: CreateAzureSQLServer
+#     displayName: 'Validate Bicep Template'
+#     jobs:
+#       steps:
+#                 - task: AzureResourceManagerTemplateDeployment@3
+#                   inputs:
+#                     deploymentScope: 'Resource Group'
+#                     azureResourceManagerConnection: '$(azureSubscription)'
+#                     subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
+#                     location: '$(location)'
+#                     resourceGroupName: 'khrg'
+#                     templateLocation: 'Linked artifact'
+#                     csmFile: '$(bicepFile)'
+#                     csmParametersFile: 'sqlserver.parameters.json'
+#                     deploymentMode: 'Validation' 
+
+#   - stage: DeployAzureSQLServer
+#     displayName: 'Deploy Bicep Template'
+#     jobs:
+#       steps:
+#                 - task: AzureResourceManagerTemplateDeployment@3
+#                   dependsOn: ValidateSQLServerBicep
+#                   displayName: 'Bicep to Deploy SQLvServer'
+#                   inputs:
+#                     deploymentScope: 'Resource Group'
+#                     azureResourceManagerConnection: '$(azureSubscription)'
+#                     subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
+#                     action: 'Create Or Update Resource Group'
+#                     resourceGroupName: 'khrg'
+#                     location: '$(location)'
+#                     templateLocation: 'Linked artifact'
+#                     csmFile: '$(bicepFile)'
+#                     csmParametersFile: 'sqlserver.parameters.json'
+#                     deploymentMode: 'Incremental'
+
+
 trigger: none
-  # branches:
-  #   include:
-  #     - main
+# branches:
+#   include:
+#     - main
 
 variables:
   azureSubscription: 'Pay-as-you-go-sc'
   location: 'eastus'
   bicepFile: 'sqlserver.bicep'
+  parametersFile: 'sqlserver.parameters.json'
+  resourceGroupName: 'khrg'
+  subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
 
 stages:
-  - stage: CreateAzureSQLServer
-    displayName: 'CheckOut Code'
-    jobs:
-      - deployment: CreateSQLServer
-        environment: 'dev'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - checkout: self
-                
-                - task: PublishBuildArtifacts@1
-                  displayName: 'Publish Bicep Artifact'
-                  inputs:
-                    pathtoPublish: '$(System.DefaultWorkingDirectory)'
-                    artifactName: 'bicep'
-                    publishLocation: 'Container'
 
-  - stage: ValidateSQLServerBicep
-    dependsOn: CreateAzureSQLServer
+  - stage: CheckoutAndLint
+    displayName: 'Checkout Code & Bicep Linting'
+    jobs:
+      - job: LintBicep
+        displayName: 'Lint Bicep Files'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Bicep Lint'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Linting Bicep..."
+                az bicep build --file $(bicepFile)
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Bicep Artifact'
+            inputs:
+              pathtoPublish: '$(System.DefaultWorkingDirectory)'
+              artifactName: 'bicep'
+              publishLocation: 'Container'
+
+  - stage: ValidateTemplate
     displayName: 'Validate Bicep Template'
+    dependsOn: CheckoutAndLint
     jobs:
-      steps:
-                - task: AzureResourceManagerTemplateDeployment@3
-                  inputs:
-                    deploymentScope: 'Resource Group'
-                    azureResourceManagerConnection: '$(azureSubscription)'
-                    subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
-                    location: '$(location)'
-                    resourceGroupName: 'khrg'
-                    templateLocation: 'Linked artifact'
-                    csmFile: '$(bicepFile)'
-                    csmParametersFile: 'sqlserver.parameters.json'
-                    deploymentMode: 'Validation' 
+      - job: Validate
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - download: current
+            artifact: bicep
 
-  - stage: DeployAzureSQLServer
-    displayName: 'Deploy Bicep Template'
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'ARM Template Validation'
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(azureSubscription)'
+              subscriptionId: '$(subscriptionId)'
+              location: '$(location)'
+              resourceGroupName: '$(resourceGroupName)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(bicepFile)'
+              csmParametersFile: '$(parametersFile)'
+              deploymentMode: 'Validation'
+
+  - stage: PreviewDeployment
+    displayName: 'What-If Deployment Preview'
+    dependsOn: ValidateTemplate
     jobs:
-      steps:
-                - task: AzureResourceManagerTemplateDeployment@3
-                  dependsOn: ValidateSQLServerBicep
-                  displayName: 'Bicep to Deploy SQLvServer'
-                  inputs:
-                    deploymentScope: 'Resource Group'
-                    azureResourceManagerConnection: '$(azureSubscription)'
-                    subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
-                    action: 'Create Or Update Resource Group'
-                    resourceGroupName: 'khrg'
-                    location: '$(location)'
-                    templateLocation: 'Linked artifact'
-                    csmFile: '$(bicepFile)'
-                    csmParametersFile: 'sqlserver.parameters.json'
-                    deploymentMode: 'Incremental'
+      - job: Preview
+        displayName: 'Preview Deployment Changes'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - download: current
+            artifact: bicep
+
+          - task: AzureCLI@2
+            displayName: 'What-If Deployment'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Running what-if analysis..."
+                az deployment group what-if \
+                  --resource-group $(resourceGroupName) \
+                  --template-file $(bicepFile) \
+                  --parameters @$(parametersFile) \
+                  --confirm-with-what-if
+
+  - stage: Deploy
+    displayName: 'Deploy Azure SQL Server'
+    dependsOn: PreviewDeployment
+    jobs:
+      - job: DeploySQL
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - download: current
+            artifact: bicep
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy Bicep Template'
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(azureSubscription)'
+              subscriptionId: '$(subscriptionId)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(location)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(bicepFile)'
+              csmParametersFile: '$(parametersFile)'
+              deploymentMode: 'Incremental'
