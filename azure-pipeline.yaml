@@ -28,6 +28,18 @@ stages:
                     publishLocation: 'Container'
 
                 - task: AzureResourceManagerTemplateDeployment@3
+                  inputs:
+                    deploymentScope: 'Resource Group'
+                    azureResourceManagerConnection: '$(azureSubscription)'
+                    subscriptionId: '6f0f938c-0599-4b69-9b56-09468ec24549'
+                    location: '$(location)'
+                    resourceGroupName: 'khrg'
+                    templateLocation: 'Linked artifact'
+                    csmFile: '$(bicepFile)'
+                    csmParametersFile: 'sqlserver.parameters.json'
+                    deploymentMode: 'Validation' 
+
+                - task: AzureResourceManagerTemplateDeployment@3
                   displayName: 'Bicep to Deploy SQLvServer'
                   inputs:
                     deploymentScope: 'Resource Group'
