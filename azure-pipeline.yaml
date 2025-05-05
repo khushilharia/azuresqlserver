@@ -31,7 +31,7 @@ stages:
     dependsOn: CreateAzureSQLServer
     displayName: 'Validate Bicep Template'
     jobs:
-        steps:
+      steps:
                 - task: AzureResourceManagerTemplateDeployment@3
                   inputs:
                     deploymentScope: 'Resource Group'
@@ -47,7 +47,7 @@ stages:
   - stage: DeployAzureSQLServer
     displayName: 'Deploy Bicep Template'
     jobs:
-        steps:
+      steps:
                 - task: AzureResourceManagerTemplateDeployment@3
                   dependsOn: ValidateSQLServerBicep
                   displayName: 'Bicep to Deploy SQLvServer'
