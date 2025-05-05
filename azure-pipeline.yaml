@@ -9,8 +9,8 @@ variables:
   bicepFile: 'sqlserver.bicep'
 
 stages:
-  - stage: CreateAzureVNET
-    displayName: 'CreateSQLServer'
+  - stage: CreateAzureSQLServer
+    displayName: 'CheckOut Code'
     jobs:
       - deployment: CreateSQLServer
         environment: 'dev'
@@ -27,6 +27,11 @@ stages:
                     artifactName: 'bicep'
                     publishLocation: 'Container'
 
+  - stage: ValidateSQLServerBicep
+    dependsOn: CreateAzureSQLServer
+    displayName: 'Validate Bicep Template'
+    jobs:
+        steps:
                 - task: AzureResourceManagerTemplateDeployment@3
                   inputs:
                     deploymentScope: 'Resource Group'
@@ -39,7 +44,12 @@ stages:
                     csmParametersFile: 'sqlserver.parameters.json'
                     deploymentMode: 'Validation' 
 
+  - stage: DeployAzureSQLServer
+    displayName: 'Deploy Bicep Template'
+    jobs:
+        steps:
                 - task: AzureResourceManagerTemplateDeployment@3
+                  dependsOn: ValidateSQLServerBicep
                   displayName: 'Bicep to Deploy SQLvServer'
                   inputs:
                     deploymentScope: 'Resource Group'
